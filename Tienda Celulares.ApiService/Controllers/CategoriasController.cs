@@ -20,7 +20,11 @@ namespace Tienda_Celulares.ApiService.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Categoria>>> Get()
         {
-            return await _context.Categorias.OrderBy(c => c.nombre_categoria).ToListAsync();
+            var categorias = await _context.Categorias
+            .OrderBy(c => c.Nombre) // propiedad C# mapeada a nombre_categoria
+            .ToListAsync();
+
+            return Ok(categorias);
         }
 
         // BUSCAR CATEGORÍA POR ID

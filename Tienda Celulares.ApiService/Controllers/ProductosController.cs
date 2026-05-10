@@ -2,84 +2,156 @@
 using Microsoft.EntityFrameworkCore;
 using System.Net.NetworkInformation;
 using Tienda_Celulares.ApiService.Data;
-using Tienda_Celulares.ApiService.Models;
+using Tienda_Celulares.ApiService.Models.ViewModel;
+using Tienda_Celulares.ApiService.Models;   
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using System;
 
 
 namespace Tienda_Celulares.ApiService.Controllers
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ProductosController : ControllerBase
+    using Microsoft.AspNetCore.Mvc;
+    using Microsoft.EntityFrameworkCore;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
+
+    namespace Tienda_Celulares.ApiService.Controllers
     {
-        private readonly AppDbContext _context;
-
-        public ProductosController(AppDbContext context)
+        [ApiController]
+        [Route("api/[controller]")]
+        public class ProductosController : ControllerBase
         {
-            _context = context;
-        }
+            private readonly AppDbContext _db;
 
-        // LISTAR
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Producto>>> Get()
-        {
-            return await _context.Productos
-            .Include(p => p.Marca)     // Carga los datos de la tabla marca
-            .Include(p => p.Categoria) // Carga los datos de la tabla categoria
-            .ToListAsync();
-        }
+            public ProductosController(AppDbContext db)
+            {
+                _db = db ?? throw new System.ArgumentNullException(nameof(db));
+            }
 
-        // BUSCAR POR ID
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Producto>> GetById(int id)
-        {
-            var producto = await _context.Productos.FindAsync(id);
+            // LISTAR
+            [HttpGet]
+            public async Task<ActionResult<IEnumerable<ProductoViewModel>>> GetAll()
+            {
+                var productos = await _db.Productos
+                    .Include(p => p.Marca)
+                    .Include(p => p.Categoria)
+                    .Select(p => new ProductoViewModel
+                    {
+                        IdProducto = p.id_producto,
+                        NombreModelo = p.nombre_modelo,
+                        Descripcion = p.descripcion,
+                        PrecioActual = p.precio_actual,
+                        TipoProducto = p.tipo_producto,
+                        IdMarca = p.id_marca,
+                        MarcaNombre = p.Marca != null ? p.Marca.Nombre : string.Empty,
+                        IdCategoria = p.id_categoria,
+                        CategoriaNombre = p.Categoria != null ? p.Categoria.Nombre : string.Empty
+                    })
+                    .ToListAsync();
 
-            if (producto == null)
-                return NotFound();
+                return Ok(productos);
+            }
 
-            return producto;
-        }
+            // OBTENER POR ID
+            [HttpGet("{id}", Name = "GetProductoById")]
+            public async Task<ActionResult<ProductoViewModel>> GetById(int id)
+            {
+                var producto = await _db.Productos
+                    .Include(p => p.Marca)
+                    .Include(p => p.Categoria)
+                    .FirstOrDefaultAsync(p => p.id_producto == id);
 
-        // CREAR
-        [HttpPost]
-        public async Task<ActionResult<Producto>> Post(Producto producto)
-        {
-            _context.Productos.Add(producto);
-            await _context.SaveChangesAsync();
+                if (producto == null) return NotFound();
 
+                var vm = new ProductoViewModel
+                {
+                    IdProducto = producto.id_producto,
+                    NombreModelo = producto.nombre_modelo,
+                    Descripcion = producto.descripcion,
+                    PrecioActual = producto.precio_actual,
+                    TipoProducto = producto.tipo_producto,
+                    IdMarca = producto.id_marca,
+                    MarcaNombre = producto.Marca?.Nombre ?? string.Empty,
+                    IdCategoria = producto.id_categoria,
+                    CategoriaNombre = producto.Categoria?.Nombre ?? string.Empty
+                };
 
-            return CreatedAtAction(nameof(GetById),
-                new { id = producto.id_producto }, producto);
-        }
+                return Ok(vm);
+            }
 
-        // EDITAR
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Put(int id, Producto producto)
-        {
-            if (id != producto.id_producto)
-                return BadRequest();
+            // CREAR
+            [HttpPost]
+            public async Task<ActionResult> Post([FromBody] ProductoViewModel model)
+            {
+                if (model == null) return BadRequest();
 
-            _context.Entry(producto).State = EntityState.Modified;
+                // Validación mínima para tipo_producto (ajusta según tu CHECK)
+                var allowed = new[] { "Celular", "Accesorio", "Repuesto" };
+                if (!allowed.Contains(model.TipoProducto))
+                    return BadRequest($"tipo_producto inválido. Valores permitidos: {string.Join(", ", allowed)}");
 
-            await _context.SaveChangesAsync();
+                var producto = new Producto
+                {
+                    nombre_modelo = model.NombreModelo,
+                    descripcion = model.Descripcion,
+                    precio_actual = model.PrecioActual,
+                    tipo_producto = model.TipoProducto,
+                    id_marca = model.IdMarca,
+                    id_categoria = model.IdCategoria
+                };
 
-            return NoContent();
-        }
+                _db.Productos.Add(producto);
+                await _db.SaveChangesAsync();
 
-        // ELIMINAR
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var producto = await _context.Productos.FindAsync(id);
+                var vm = new ProductoViewModel
+                {
+                    IdProducto = producto.id_producto,
+                    NombreModelo = producto.nombre_modelo,
+                    Descripcion = producto.descripcion,
+                    PrecioActual = producto.precio_actual,
+                    TipoProducto = producto.tipo_producto,
+                    IdMarca = producto.id_marca,
+                    MarcaNombre = (await _db.Marcas.FindAsync(producto.id_marca))?.Nombre ?? string.Empty,
+                    IdCategoria = producto.id_categoria,
+                    CategoriaNombre = (await _db.Categorias.FindAsync(producto.id_categoria))?.Nombre ?? string.Empty
+                };
 
-            if (producto == null)
-                return NotFound();
+                return CreatedAtRoute("GetProductoById", new { id = producto.id_producto }, vm);
+            }
 
-            _context.Productos.Remove(producto);
+            // EDITAR
+            [HttpPut("{id}")]
+            public async Task<ActionResult> Put(int id, [FromBody] ProductoViewModel model)
+            {
+                if (model == null) return BadRequest();
 
-            await _context.SaveChangesAsync();
+                var producto = await _db.Productos.FindAsync(id);
+                if (producto == null) return NotFound();
 
-            return NoContent();
+                producto.nombre_modelo = model.NombreModelo;
+                producto.descripcion = model.Descripcion;
+                producto.precio_actual = model.PrecioActual;
+                producto.tipo_producto = model.TipoProducto;
+                producto.id_marca = model.IdMarca;
+                producto.id_categoria = model.IdCategoria;
+
+                await _db.SaveChangesAsync();
+                return NoContent();
+            }
+
+            // ELIMINAR
+            [HttpDelete("{id}")]
+            public async Task<ActionResult> Delete(int id)
+            {
+                var producto = await _db.Productos.FindAsync(id);
+                if (producto == null) return NotFound();
+
+                _db.Productos.Remove(producto);
+                await _db.SaveChangesAsync();
+                return NoContent();
+            }
         }
     }
 }

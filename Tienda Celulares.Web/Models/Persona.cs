@@ -1,4 +1,4 @@
-﻿namespace Tienda_de_Celulares.Web.Models
+﻿namespace Tienda_Celulares.Web.Models
 {
     public class Persona
     {

@@ -1,0 +1,107 @@
+﻿@page "/ventas/create"
+
+@using System.Net.Http.Json
+@using Tienda_Celulares.Web.Models;
+@using Tienda_Celulares.Web.Models.ViewModel;
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3 class="mb-4">Nueva Venta</h3>
+
+<EditForm Model="modelo" OnValidSubmit="Guardar">
+
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+
+        <label class="form-label">
+            ID Cliente
+        </label>
+
+        <InputNumber class="form-control"
+                     @bind-Value="modelo.IdCliente" />
+
+    </div>
+
+    <div class="mb-3">
+
+        <label class="form-label">
+            ID Empleado
+        </label>
+
+        <InputNumber class="form-control"
+                     @bind-Value="modelo.IdEmpleado" />
+
+    </div>
+
+    <div class="mb-3">
+
+        <label class="form-label">
+            Método Pago
+        </label>
+
+        <InputNumber class="form-control"
+                     @bind-Value="modelo.IdMetodo" />
+
+    </div>
+
+    <div class="mb-3">
+
+        <label class="form-label">
+            Tienda
+        </label>
+
+        <InputNumber class="form-control"
+                     @bind-Value="modelo.IdTienda" />
+
+    </div>
+
+    <div class="mb-3">
+
+        <label class="form-label">
+            Total Venta
+        </label>
+
+        <InputNumber class="form-control"
+                     @bind-Value="modelo.TotalVenta" />
+
+    </div>
+
+    <button type="submit"
+            class="btn btn-success">
+        Guardar
+    </button>
+
+    <button type="button"
+            class="btn btn-secondary ms-2"
+            @onclick="Volver">
+        Volver
+    </button>
+
+</EditForm>
+
+@code {
+
+    private VentaViewModel modelo = new();
+
+    private async Task Guardar()
+    {
+        var response =
+            await Http.PostAsJsonAsync(
+                "api/ventas",
+                modelo
+            );
+
+        if (response.IsSuccessStatusCode)
+        {
+            Navigation.NavigateTo("/ventas");
+        }
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/ventas");
+    }
+}

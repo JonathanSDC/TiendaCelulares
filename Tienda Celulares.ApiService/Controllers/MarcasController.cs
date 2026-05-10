@@ -24,7 +24,11 @@ namespace Tienda_Celulares.ApiService.Controllers
             [HttpGet]
             public async Task<ActionResult<IEnumerable<Marca>>> Get()
             {
-                return await _context.Marcas.OrderBy(m => m.nombre_marca).ToListAsync();
+                var marcas = await _context.Marcas
+            .OrderBy(m => m.Nombre) // usa la propiedad C# mapeada
+            .ToListAsync();
+
+                return Ok(marcas);
             }
 
             // BUSCAR MARCA POR ID

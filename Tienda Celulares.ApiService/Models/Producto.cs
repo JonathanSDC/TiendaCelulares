@@ -24,5 +24,7 @@ namespace Tienda_Celulares.ApiService.Models
         //visualizar
         public virtual Marca? Marca { get; set; }
         public virtual Categoria? Categoria { get; set; }
+
+        public ICollection<DetalleVenta> DetalleVentas { get; set; } = new List<DetalleVenta>();
     }
 }
