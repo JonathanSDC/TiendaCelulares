@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TiendaCelulares.Models.ViewModels
+namespace Tienda_Celulares.ApiService.Models.ViewModel
 {
     public class ClienteViewModel
     {
@@ -21,6 +21,6 @@ namespace TiendaCelulares.Models.ViewModels
 
         public string? TipoCliente { get; set; }
 
-       // public int? IdDireccion { get; set; }
+        // public int? IdDireccion { get; set; }
     }
 }

@@ -5,11 +5,12 @@
 @using TiendaCelulares.Models.ViewModels
 
 @inject HttpClient Http
+@inject IJSRuntime JS
 @inject NavigationManager Navigation
 
 <h3 class="mb-4">Nuevo Cliente</h3>
 
-<EditForm Model="modelo" OnValidSubmit="Guardar">
+<EditForm Model="modelo" OnSubmit="Guardar">
 
     <DataAnnotationsValidator />
     <ValidationSummary />
@@ -54,6 +55,7 @@
         Guardar
     </button>
 
+
     <button type="button"
             class="btn btn-secondary ms-2"
             @onclick="Volver">
@@ -66,18 +68,70 @@
 
     private ClienteViewModel modelo = new();
 
-    private async Task Guardar()
+
+    <!--
+    private async Task Guardar(EditContext editContext)
     {
-        var response = await Http.PostAsJsonAsync(
-            "api/clientes",
-            modelo
-        );
+
+        // 1. Confirmación visual inmediata en el navegador
+        await JS.InvokeVoidAsync("alert", "¡El método Guardar se está ejecutando!");
+
+        try
+        {
+            // 2. Asignar datos faltantes que pide tu SQL
+            modelo.FechaRegistro = DateTime.Now;
+
+            if (editContext.Validate())
+            {
+                var response = await Http.PostAsJsonAsync("api/clientes", modelo);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    Navigation.NavigateTo("/clientes");
+                }
+                else
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    await JS.InvokeVoidAsync("alert", "Error del API: " + errorBody);
+                }
+            }
+            else
+            {
+                await JS.InvokeVoidAsync("alert", "El formulario no es válido. Revisa los campos.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", "Error crítico: " + ex.Message);
+        }
+
+    }  -->
+
+    private async Task Guardar(EditContext editContext)
+    {
+        // Forzamos la fecha para cumplir con el NOT NULL de SQL
+        modelo.FechaRegistro = DateTime.Now;
+
+        // Si el ID es 0, a veces el API se confunde si espera un null o no espera el campo
+        // Asegúrate de que los campos obligatorios tengan datos básicos
+        if (string.IsNullOrEmpty(modelo.TipoCliente)) modelo.TipoCliente = "Natural";
+
+        var response = await Http.PostAsJsonAsync("api/clientes", modelo);
 
         if (response.IsSuccessStatusCode)
         {
             Navigation.NavigateTo("/clientes");
         }
+        else
+        {
+            // Esto nos ayudará a ver el código de estado (400, 404, 500...)
+            var status = response.StatusCode;
+            var mensaje = await response.Content.ReadAsStringAsync();
+            await JS.InvokeVoidAsync("alert", $"Error {status}: {mensaje}");
+        }
     }
+
+
 
     private void Volver()
     {
