@@ -1,0 +1,86 @@
+﻿@page "/clientes/create"
+@rendermode InteractiveServer
+
+@using System.Net.Http.Json
+@using TiendaCelulares.Models.ViewModels
+
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3 class="mb-4">Nuevo Cliente</h3>
+
+<EditForm Model="modelo" OnValidSubmit="Guardar">
+
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Nombre</label>
+
+        <InputText class="form-control"
+                   @bind-Value="modelo.Nombre" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Apellido</label>
+
+        <InputText class="form-control"
+                   @bind-Value="modelo.Apellido" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Teléfono</label>
+
+        <InputText class="form-control"
+                   @bind-Value="modelo.Telefono" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Email</label>
+
+        <InputText class="form-control"
+                   @bind-Value="modelo.Email" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Tipo Cliente</label>
+
+        <InputText class="form-control"
+                   @bind-Value="modelo.TipoCliente" />
+    </div>
+
+    <button type="submit"
+            class="btn btn-success">
+        Guardar
+    </button>
+
+    <button type="button"
+            class="btn btn-secondary ms-2"
+            @onclick="Volver">
+        Volver
+    </button>
+
+</EditForm>
+
+@code {
+
+    private ClienteViewModel modelo = new();
+
+    private async Task Guardar()
+    {
+        var response = await Http.PostAsJsonAsync(
+            "api/clientes",
+            modelo
+        );
+
+        if (response.IsSuccessStatusCode)
+        {
+            Navigation.NavigateTo("/clientes");
+        }
+    }
+
+    private void Volver()
+    {
+        Navigation.NavigateTo("/clientes");
+    }
+}
