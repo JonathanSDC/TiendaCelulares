@@ -1,13 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tienda_Celulares.ApiService.Data;
-using Tienda_Celulares.ApiService.Models.ViewModel;
-using Tienda_Celulares.ApiService.Models;
-using static Microsoft.IO.RecyclableMemoryStreamManager;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System;
+using CRUD.Shared.Models;
+
+
 
 
 namespace Tienda_Celulares.ApiService.Controllers

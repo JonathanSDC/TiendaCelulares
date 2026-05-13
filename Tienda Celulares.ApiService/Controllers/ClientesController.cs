@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tienda_Celulares.ApiService.Data;
-using Tienda_Celulares.ApiService.Models;
-using Tienda_Celulares.ApiService.Models.ViewModel;
+using CRUD.Shared.Models;
+using CRUD.Shared.Models.ViewModel;
 
 
 namespace Tienda_de_Celulares.ApiService.Controllers

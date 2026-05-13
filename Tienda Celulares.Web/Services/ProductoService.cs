@@ -1,6 +1,6 @@
 ﻿using System.Buffers.Text;
 using System.Net.Http.Json;
-using Tienda_Celulares.Web.Models;
+using CRUD.Shared.Models;
 
 
 namespace Tienda_Celulares.Web.Services
