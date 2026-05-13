@@ -42,11 +42,19 @@ namespace Tienda_Celulares.ApiService.Data
         // =========================
         public DbSet<Direccion> Direcciones { get; set; }
 
+
         // =========================
-        // OTROS
+        // Inventario y Equipos Fisicos + MovimientosInventario
+        // =========================
+        public DbSet<Inventario> Inventarios { get; set; }
+        public DbSet<EquipoFisico> EquiposFisicos { get; set; }
+        public DbSet<MovimientoInventario> MovimientosInventario { get; set; }
+
+
+        // =========================
+        // METODOS DE PAGO
         // =========================
         public DbSet<MetodoPago> MetodosPago { get; set; }
-        // public DbSet<Tienda> Tiendas { get; set; } // pendiente si existe
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -219,6 +227,89 @@ namespace Tienda_Celulares.ApiService.Data
                       .HasForeignKey(t => t.IdDireccion)
                       .HasConstraintName("fk_tienda_direccion");
             });
+
+
+            // =========================
+            // DIRECCION
+            // =========================
+            modelBuilder.Entity<Direccion>(entity =>
+            {
+                entity.ToTable("direccion"); 
+                entity.HasKey(d => d.IdDireccion);
+
+                entity.Property(d => d.IdDireccion).HasColumnName("id_direccion");
+                entity.Property(d => d.Calle).HasColumnName("calle");
+                entity.Property(d => d.Ciudad).HasColumnName("ciudad");
+                entity.Property(d => d.Departamento).HasColumnName("departamento");
+                entity.Property(d => d.Pais).HasColumnName("pais");
+            });
+
+            
+            // =========================
+            // INVENTARIO
+            // =========================
+            modelBuilder.Entity<Inventario>(entity =>
+            {
+                entity.ToTable("inventario");
+                entity.HasKey(i => i.IdInventario);
+
+                entity.Property(i => i.IdInventario).HasColumnName("id_inventario");
+                entity.Property(i => i.IdProducto).HasColumnName("id_producto");
+                entity.Property(i => i.IdTienda).HasColumnName("id_tienda");
+                entity.Property(i => i.Cantidad).HasColumnName("cantidad");
+                entity.Property(i => i.StockMinimo).HasColumnName("stock_minimo");
+
+                entity.HasOne(i => i.Producto)
+                      .WithMany(p => p.Inventarios)
+                      .HasForeignKey(i => i.IdProducto);
+
+                entity.HasOne(i => i.Tienda)
+                      .WithMany(t => t.Inventarios)
+                      .HasForeignKey(i => i.IdTienda);
+            });
+
+            
+            // =========================
+            // EQUIPO FISICO
+            // =========================
+            modelBuilder.Entity<EquipoFisico>(entity =>
+            {
+                entity.ToTable("equipo_fisico");
+                entity.HasKey(e => e.NumeroSerie);
+
+                entity.Property(e => e.NumeroSerie).HasColumnName("numero_serie");
+                entity.Property(e => e.Estado).HasColumnName("estado");
+                entity.Property(e => e.Color).HasColumnName("color");
+                entity.Property(e => e.IdProducto).HasColumnName("id_producto");
+                entity.Property(e => e.IdTienda).HasColumnName("id_tienda");
+
+                entity.HasOne(e => e.Producto)
+                      .WithMany(p => p.EquiposFisicos)
+                      .HasForeignKey(e => e.IdProducto);
+
+                entity.HasOne(e => e.Tienda)
+                      .WithMany(t => t.EquiposFisicos)
+                      .HasForeignKey(e => e.IdTienda);
+            });
+
+            
+            // =========================
+            // MOVIMIENTO INVENTARIO
+            // =========================
+            modelBuilder.Entity<MovimientoInventario>(entity =>
+            {
+                entity.ToTable("movimiento_inventario");
+                entity.HasKey(m => m.IdMovimiento);
+
+                entity.Property(m => m.IdMovimiento).HasColumnName("id_movimiento");
+                entity.Property(m => m.Tipo).HasColumnName("tipo");
+                entity.Property(m => m.Fecha).HasColumnName("fecha");
+                entity.Property(m => m.Referencia).HasColumnName("referencia");
+                entity.Property(m => m.NumeroSerie).HasColumnName("numero_serie");
+                entity.Property(m => m.IdProducto).HasColumnName("id_producto");
+                entity.Property(m => m.Cantidad).HasColumnName("cantidad");
+            });
+
 
 
             base.OnModelCreating(modelBuilder);

@@ -25,6 +25,14 @@ namespace CRUD.Shared.Models
         public virtual Marca? Marca { get; set; }
         public virtual Categoria? Categoria { get; set; }
 
+        // Relación con DetalleVenta
         public ICollection<DetalleVenta> DetalleVentas { get; set; } = new List<DetalleVenta>();
+
+        // Relación con Inventario (productos no serializados)
+        public ICollection<Inventario> Inventarios { get; set; } = new List<Inventario>();
+
+        // Relación con EquipoFisico (productos serializados)
+        public ICollection<EquipoFisico> EquiposFisicos { get; set; } = new List<EquipoFisico>();
+
     }
 }

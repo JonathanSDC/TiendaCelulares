@@ -54,6 +54,7 @@
                 <option value="@t.Id">@t.Nombre</option>
             }
         </InputSelect>
+        <button type="button" class="btn btn-link" @onclick="AbrirModalTienda">+ Agregar nueva tienda</button>
     </div>
 
     <!-- Agregar producto al detalle -->
@@ -111,6 +112,70 @@
 </EditForm>
 
 
+<!--PANTALLA MODAL PARA TIENDA-->
+@if (mostrarModalTienda)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content shadow-lg">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Agregar Nueva Tienda</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CerrarModalTienda"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="nuevaTienda" OnValidSubmit="GuardarTienda">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nombre</label>
+                                <InputText class="form-control" @bind-Value="nuevaTienda.Nombre" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Calle</label>
+                                <InputText class="form-control" @bind-Value="nuevaTienda.Calle" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Ciudad</label>
+                                <InputText class="form-control" @bind-Value="nuevaTienda.Ciudad" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Departamento</label>
+                                <InputText class="form-control" @bind-Value="nuevaTienda.Departamento" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">País</label>
+                                <InputText class="form-control" @bind-Value="nuevaTienda.Pais" />
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-success me-2">
+                                <i class="bi bi-check-circle"></i> Guardar
+                            </button>
+                            <button type="button" class="btn btn-secondary" @onclick="CerrarModalTienda">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+
+@if (!string.IsNullOrEmpty(mensajeError))
+{
+    <div class="alert alert-danger mt-2">@mensajeError</div>
+}
+
+
 @code {
     // Usas tu VentaViewModel existente
     private VentaViewModel modelo = new VentaViewModel
@@ -128,11 +193,19 @@
     // Detalles en memoria
     private List<DetalleVentaViewModel> detalles = new();
 
+	// Para validar stock, cargamos inventarios al seleccionar tienda
+    private List<InventarioDto> Inventarios = new();
+
+	// Inventarios para validación de stock
+    private string mensajeError = string.Empty;
+
     private int productoSeleccionadoId = 0;
     private int cantidadSeleccionada = 1;
 
     private string EmpleadoNombre = "";
     private int EmpleadoId = 0;
+
+    
 
     protected override async Task OnInitializedAsync()
     {
@@ -153,18 +226,41 @@
             }
             EmpleadoNombre = user.Identity.Name ?? "Empleado";
         }
+
+		// Cargar todos los inventarios para validación de stock. Alternativamente, podrías cargar solo los de la tienda seleccionada en el evento de cambio del select.
+        Inventarios = await Http.GetFromJsonAsync<List<InventarioDto>>("api/inventario") ?? new();
+
+
     }
 
+	// Para mostrar mensajes de error al agregar productos al detalle 
     private void AgregarDetalle()
     {
+        mensajeError = string.Empty;
+
         if (productoSeleccionadoId == 0 || cantidadSeleccionada <= 0) return;
 
         var prod = Productos.FirstOrDefault(p => p.Id == productoSeleccionadoId);
         if (prod == null) return;
 
-        // Validación de stock opcional
-        // if (prod.Stock < cantidadSeleccionada) { /* mostrar alerta */ return; }
+        // Buscar inventario de esa tienda
+        var inventario = Inventarios.FirstOrDefault(i => i.IdProducto == prod.Id && i.IdTienda == modelo.IdTienda);
 
+        if (inventario == null)
+        {
+            // Producto no existe en esa tienda
+            mensajeError = $"El producto {prod.NombreModelo} no está disponible en la tienda seleccionada.";
+            return;
+        }
+
+        if (inventario.Cantidad < cantidadSeleccionada)
+        {
+            // Stock insuficiente
+            mensajeError = $"Stock agotado: solo quedan {inventario.Cantidad} unidades en esta tienda.";
+            return;
+        }
+
+        // Si pasa validación, agregar detalle
         var detalle = new DetalleVentaViewModel
         {
             IdProducto = prod.Id,
@@ -174,11 +270,13 @@
         };
 
         detalles.Add(detalle);
+        inventario.Cantidad -= cantidadSeleccionada; // actualizar stock local
         RecalcularTotal();
 
         productoSeleccionadoId = 0;
         cantidadSeleccionada = 1;
     }
+
 
     private void QuitarDetalle(DetalleVentaViewModel d)
     {
@@ -217,4 +315,51 @@
     }
 
     private void Volver() => Navigation.NavigateTo("/ventas");
+
+
+
+	//Pantalla Modal para agregar tienda desde la creación de venta
+
+    private bool mostrarModalTienda = false;
+    private TiendaDto nuevaTienda = new TiendaDto();
+
+    private void AbrirModalTienda()
+    {
+        nuevaTienda = new TiendaDto();
+        mostrarModalTienda = true;
+    }
+
+    private void CerrarModalTienda()
+    {
+        mostrarModalTienda = false;
+    }
+
+    private async Task GuardarTienda()
+    {
+        var response = await Http.PostAsJsonAsync("api/tiendas", nuevaTienda);
+        if (response.IsSuccessStatusCode)
+        {
+            // refrescar lista de tiendas
+            Tiendas = await Http.GetFromJsonAsync<List<TiendaDto>>("api/tiendas") ?? new();
+            // seleccionar la nueva tienda automáticamente
+            var creada = await response.Content.ReadFromJsonAsync<TiendaDto>();
+            if (creada != null)
+            {
+                modelo.IdTienda = creada.Id;
+            }
+            mostrarModalTienda = false;
+        }
+        else
+        {
+            // manejar error
+        }
+    }
+
+
 }
+
+
+
+
+
+

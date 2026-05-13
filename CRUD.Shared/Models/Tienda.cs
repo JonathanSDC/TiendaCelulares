@@ -24,6 +24,14 @@ namespace CRUD.Shared.Models
 
         // Navegación
         public Direccion? Direccion { get; set; }
+
+        // Relación con Inventario
+        public ICollection<Inventario> Inventarios { get; set; } = new List<Inventario>();
+
+        // Relación con Equipo Físico
+        public ICollection<EquipoFisico> EquiposFisicos { get; set; } = new List<EquipoFisico>();
+
     }
 }
+
 
