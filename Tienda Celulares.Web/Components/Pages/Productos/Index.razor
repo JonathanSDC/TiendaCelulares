@@ -1,0 +1,84 @@
+﻿@page "/productos"
+@using Tienda_Celulares.Web.Services
+@inject ProductoService productoService
+@using CRUD.Shared.Models
+@inject NavigationManager Navigation
+@using CRUD.Shared.Models.ViewModel
+
+
+<h3 class="mb-4">Gestión de Productos</h3>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <input class="form-control"
+               placeholder="Buscar producto..."
+               @bind="busqueda"
+               @bind:event="oninput" />
+    </div>
+    <div class="col-md-4">
+        <button class="btn btn-primary" @onclick="NuevoProducto">Nuevo Producto</button>
+    </div>
+</div>
+
+<table class="table table-striped table-hover">
+    <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Modelo</th>
+            <th>Marca</th>
+            <th>Categoría</th>
+            <th>Precio</th>
+            <th>Tipo</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in productosFiltrados)
+        {
+            <tr>
+                <td>@p.IdProducto</td>
+                <td>@p.NombreModelo</td>
+                <td>@(string.IsNullOrEmpty(p.MarcaNombre) ? "Sin Marca" : p.MarcaNombre)</td>
+                <td>@(string.IsNullOrEmpty(p.CategoriaNombre) ? "Sin Categoría" : p.CategoriaNombre)</td>
+                <td>$ @p.PrecioActual</td>
+                <td>@p.TipoProducto</td>
+                <td>
+                    <button class="btn btn-warning btn-sm me-2"
+                            @onclick="() => Editar(p.IdProducto)">
+                        Editar
+                    </button>
+                    <button class="btn btn-danger btn-sm"
+                            @onclick="() => Eliminar(p.IdProducto)">
+                        Eliminar
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<ProductoViewModel> productos = new();
+    private string busqueda = "";
+
+    // Filtrado simple por búsqueda
+    private IEnumerable<ProductoViewModel> productosFiltrados =>
+        productos.Where(p =>
+            string.IsNullOrWhiteSpace(busqueda) ||
+            p.NombreModelo.Contains(busqueda, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        productos = await productoService.ObtenerProductos();
+    }
+
+    private void NuevoProducto() => Navigation.NavigateTo("/productos/create");
+    private void Editar(int id) => Navigation.NavigateTo($"/productos/edit/{id}");
+
+    private async Task Eliminar(int id)
+    {
+        await productoService.EliminarProducto(id);
+        productos = await productoService.ObtenerProductos();
+        StateHasChanged();
+    }
+}

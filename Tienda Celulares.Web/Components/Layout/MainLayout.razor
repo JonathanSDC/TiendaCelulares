@@ -19,7 +19,7 @@
                 @if (string.IsNullOrEmpty(CurrentUser))
                 {
                     <NavLink class="btn btn-outline-primary" href="/login">
-                        <i class="bi bi-box-arrow-in-right"></i> Ingresar
+                        <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesion
                     </NavLink>
                 }
                 else
@@ -72,7 +72,7 @@
     private async Task Logout()
     {
         await LocalStorage.RemoveItemAsync("currentUser");
-        AuthState.CurrentUser = null; // 🔹 dispara OnChange
+        AuthState.CurrentUser = null; // Producto
         Navigation.NavigateTo("/login");
     }
 

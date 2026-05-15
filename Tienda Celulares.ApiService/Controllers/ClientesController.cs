@@ -90,5 +90,85 @@ namespace Tienda_de_Celulares.ApiService.Controllers
                 return BadRequest($"Error real de SQL: {innerError}");
             }
         }
+
+        // DELETE: api/clientes/{id}
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var cliente = await _context.Clientes.FindAsync(id);
+            if (cliente == null)
+            {
+                return NotFound("Cliente no encontrado.");
+            }
+
+            // También eliminar la persona asociada si corresponde
+            var persona = await _context.Personas.FindAsync(cliente.IdPersona);
+
+            _context.Clientes.Remove(cliente);
+            if (persona != null)
+            {
+                _context.Personas.Remove(persona);
+            }
+
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        // PUT: api/clientes/{id}
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Put(int id, ClienteViewModel modelo)
+        {
+            var cliente = await _context.Clientes
+                .Include(c => c.Persona)
+                .FirstOrDefaultAsync(c => c.IdPersona == id);
+
+            if (cliente == null)
+            {
+                return NotFound("Cliente no encontrado.");
+            }
+
+            // Actualizar persona
+            if (cliente.Persona != null)
+            {
+                cliente.Persona.Nombre = modelo.Nombre;
+                cliente.Persona.Apellido = modelo.Apellido;
+                cliente.Persona.Telefono = modelo.Telefono;
+                cliente.Persona.Email = modelo.Email;
+            }
+
+            // Actualizar cliente
+            cliente.TipoCliente = modelo.TipoCliente;
+            cliente.FechaRegistro = modelo.FechaRegistro;
+
+            await _context.SaveChangesAsync();
+            return Ok();
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<ClienteViewModel>> GetById(int id)
+        {
+            var cliente = await _context.Clientes
+                .Include(c => c.Persona)
+                .Where(c => c.IdPersona == id)
+                .Select(c => new ClienteViewModel
+                {
+                    IdPersona = c.IdPersona,
+                    Nombre = c.Persona != null ? c.Persona.Nombre : "",
+                    Apellido = c.Persona != null ? c.Persona.Apellido : "",
+                    Telefono = c.Persona != null ? c.Persona.Telefono : "",
+                    Email = c.Persona != null ? c.Persona.Email : "",
+                    TipoCliente = c.TipoCliente ?? "Natural",
+                    FechaRegistro = c.FechaRegistro
+                })
+                .FirstOrDefaultAsync();
+
+            if (cliente == null) return NotFound();
+
+            return Ok(cliente);
+        }
+
+
+
+
     }
 }

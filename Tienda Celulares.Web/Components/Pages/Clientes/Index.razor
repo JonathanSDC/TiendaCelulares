@@ -78,29 +78,20 @@
 @code {
 
     private List<ClienteViewModel> clientes = new();
-
     private string busqueda = string.Empty;
 
     private IEnumerable<ClienteViewModel> clientesFiltrados =>
         clientes.Where(c =>
-
             string.IsNullOrWhiteSpace(busqueda)
-
             || c.Nombre.Contains(busqueda, StringComparison.OrdinalIgnoreCase)
-
             || c.Apellido.Contains(busqueda, StringComparison.OrdinalIgnoreCase)
-
-            || (c.Email != null &&
+            || (!string.IsNullOrEmpty(c.Email) &&
                 c.Email.Contains(busqueda, StringComparison.OrdinalIgnoreCase))
-
         );
 
     protected override async Task OnInitializedAsync()
     {
-        var resultado = await Http.GetFromJsonAsync<List<ClienteViewModel>>(
-            "api/clientes"
-        );
-
+        var resultado = await Http.GetFromJsonAsync<List<ClienteViewModel>>("api/clientes");
         if (resultado != null)
         {
             clientes = resultado;
@@ -120,15 +111,18 @@
     private async Task Eliminar(int id)
     {
         var response = await Http.DeleteAsync($"api/clientes/{id}");
-
         if (response.IsSuccessStatusCode)
         {
             var cliente = clientes.FirstOrDefault(c => c.IdPersona == id);
-
             if (cliente != null)
             {
                 clientes.Remove(cliente);
+                StateHasChanged();
             }
+        }
+        else
+        {
+            Console.WriteLine("Error eliminando cliente");
         }
     }
 }

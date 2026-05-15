@@ -1,0 +1,131 @@
+﻿@page "/productos/create"
+@using Tienda_Celulares.Web.Services
+@inject ProductoService productoService
+@using CRUD.Shared.Models.ViewModel
+@inject NavigationManager Navigation
+@using CRUD.Shared.Models
+
+
+<h3 class="mb-4">Nuevo Producto</h3>
+
+<EditForm Model="producto" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <!-- Modelo -->
+    <div class="mb-3">
+        <label>Modelo</label>
+        <InputText class="form-control" @bind-Value="producto.NombreModelo" />
+    </div>
+
+    <!-- Precio -->
+    <div class="mb-3">
+        <label>Precio</label>
+        <InputNumber class="form-control" @bind-Value="producto.PrecioActual" />
+    </div>
+
+    <!-- Tipo -->
+    <div class="mb-3">
+        <label>Tipo</label>
+        <select class="form-select" @onchange="OnTipoChanged" value="@producto.TipoProducto">
+            <option value="">Seleccione tipo...</option>
+            <option value="telefono">Teléfono</option>
+            <option value="tablet">Tablet</option>
+            <option value="repuesto">Repuesto</option>
+            <option value="accesorio">Accesorio</option>
+        </select>
+    </div>
+
+    <!-- Marca -->
+    <div class="mb-3">
+        <label>Marca</label>
+        <select class="form-select" @bind="producto.IdMarca">
+            <option value="">Seleccione marca...</option>
+            @foreach (var m in marcas)
+            {
+                <option value="@m.IdMarca">@m.Nombre</option>
+            }
+        </select>
+    </div>
+
+    <!-- Categoría -->
+    <div class="mb-3">
+        <label>Categoría</label>
+        <select class="form-select" @bind="producto.IdCategoria">
+            <option value="">Seleccione categoría...</option>
+            @foreach (var c in categoriasFiltradas)
+            {
+                <option value="@c.IdCategoria">@c.Nombre</option>
+            }
+        </select>
+    </div>
+
+    <!-- Descripción -->
+    <div class="mb-3">
+        <label>Descripción</label>
+        <InputTextArea class="form-control" @bind-Value="producto.Descripcion" />
+    </div>
+
+    <button type="submit" class="btn btn-success me-2">Guardar</button>
+    <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+</EditForm>
+
+@code {
+    private ProductoViewModel producto = new();
+    private List<Marca> marcas = new();
+    private List<Categoria> categorias = new();
+    private List<Categoria> categoriasFiltradas = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        marcas = await productoService.ObtenerMarcas();
+        categorias = await productoService.ObtenerCategorias();
+        categoriasFiltradas = categorias; // inicializamos con todas
+    }
+
+    private async Task Guardar()
+    {
+        await productoService.CrearProducto(producto);
+        Navigation.NavigateTo("/productos");
+    }
+
+    private void Cancelar() => Navigation.NavigateTo("/productos");
+
+    private void OnTipoChanged(ChangeEventArgs e)
+    {
+        producto.TipoProducto = e.Value?.ToString() ?? "";
+        ActualizarCategorias();
+    }
+
+    private void ActualizarCategorias()
+    {
+        if (string.IsNullOrEmpty(producto.TipoProducto))
+        {
+            categoriasFiltradas = new();
+        }
+        else
+        {
+            categoriasFiltradas = categorias
+                .Where(c => DeterminarSiPertenece(c.Nombre, producto.TipoProducto))
+                .ToList();
+        }
+    }
+
+    private bool DeterminarSiPertenece(string nombreCat, string tipo)
+    {
+        if (tipo == "telefono")
+            return nombreCat.Contains("Gama") || nombreCat.Contains("Smartphone");
+
+        if (tipo == "tablet")
+            return nombreCat.Contains("Android") || nombreCat.Contains("iPad") || nombreCat.Contains("Windows");
+
+        if (tipo == "repuesto")
+            return new[] { "Pantalla", "Batería", "Placa", "Cámara", "Conector" }.Any(nombreCat.Contains);
+
+        if (tipo == "accesorio")
+            return new[] { "Funda", "Protector", "Cargador", "Audífono", "Power" }.Any(nombreCat.Contains);
+
+        return false;
+    }
+
+}

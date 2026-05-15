@@ -7,108 +7,76 @@
 @inject HttpClient Http
 @inject NavigationManager Navigation
 
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
 <h3 class="mb-4">Editar Cliente</h3>
 
 @if (cargando)
 {
-        <p>Cargando cliente...</p>
+    <p>Cargando cliente...</p>
 }
 else
 {
-        <EditForm Model="modelo" OnValidSubmit="Guardar">
+    <EditForm Model="modelo" OnValidSubmit="Guardar">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
 
-            <DataAnnotationsValidator />
-            <ValidationSummary />
+        <div class="mb-3">
+            <label>Nombre</label>
+            <InputText class="form-control" @bind-Value="modelo.Nombre" />
+        </div>
 
-            <div class="mb-3">
-                <label class="form-label">Nombre</label>
+        <div class="mb-3">
+            <label>Apellido</label>
+            <InputText class="form-control" @bind-Value="modelo.Apellido" />
+        </div>
 
-                <InputText class="form-control"
-                           @bind-Value="modelo.Nombre" />
-            </div>
+        <div class="mb-3">
+            <label>Teléfono</label>
+            <InputText class="form-control" @bind-Value="modelo.Telefono" />
+        </div>
 
-            <div class="mb-3">
-                <label class="form-label">Apellido</label>
+        <div class="mb-3">
+            <label>Email</label>
+            <InputText class="form-control" @bind-Value="modelo.Email" />
+        </div>
 
-                <InputText class="form-control"
-                           @bind-Value="modelo.Apellido" />
-            </div>
+        <div class="mb-3">
+            <label>Tipo Cliente</label>
+            <InputText class="form-control" @bind-Value="modelo.TipoCliente" />
+        </div>
 
-            <div class="mb-3">
-                <label class="form-label">Teléfono</label>
-
-                <InputText class="form-control"
-                           @bind-Value="modelo.Telefono" />
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Email</label>
-
-                <InputText class="form-control"
-                           @bind-Value="modelo.Email" />
-            </div>
-
-            <div class="mb-3">
-                <label class="form-label">Tipo Cliente</label>
-
-                <InputText class="form-control"
-                           @bind-Value="modelo.TipoCliente" />
-            </div>
-
-            <button type="submit"
-                    class="btn btn-success me-2">
-                Guardar
-            </button>
-
-            <button type="button"
-                    class="btn btn-secondary"
-                    @onclick="Cancelar">
-                Cancelar
-            </button>
-
-        </EditForm>
+        <button type="submit" class="btn btn-success me-2">Guardar</button>
+        <button type="button" class="btn btn-secondary" @onclick="Cancelar">Cancelar</button>
+    </EditForm>
 }
 
 @code {
-
-    [Parameter]
-    public int Id { get; set; }
-
+    [Parameter] public int id { get; set; }
     private ClienteViewModel modelo = new();
-
     private bool cargando = true;
 
     protected override async Task OnInitializedAsync()
     {
-        try
+        var cliente = await Http.GetFromJsonAsync<ClienteViewModel>($"api/clientes/{id}");
+        if (cliente != null)
         {
-            var cliente = await Http.GetFromJsonAsync<ClienteViewModel>(
-                $"api/clientes/{Id}"
-            );
-
-            if (cliente != null)
-            {
-                modelo = cliente;
-            }
+            modelo = cliente;
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-        }
-
         cargando = false;
     }
 
     private async Task Guardar()
     {
-        var response = await Http.PutAsJsonAsync(
-            $"api/clientes/{modelo.IdPersona}",
-            modelo
-        );
-
+        var response = await Http.PutAsJsonAsync($"api/clientes/{id}", modelo);
         if (response.IsSuccessStatusCode)
         {
             Navigation.NavigateTo("/clientes");
+        }
+        else
+        {
+            Console.WriteLine("Error al actualizar cliente");
         }
     }
 
