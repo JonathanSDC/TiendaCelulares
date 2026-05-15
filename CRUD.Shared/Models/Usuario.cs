@@ -33,5 +33,7 @@ namespace CRUD.Shared.Models
 
         [ForeignKey(nameof(IdEmpleado))]
         public Empleado? Empleado { get; set; }
+
+        public ICollection<UsuarioRol> UsuarioRoles { get; set; } = new List<UsuarioRol>();
     }
 }

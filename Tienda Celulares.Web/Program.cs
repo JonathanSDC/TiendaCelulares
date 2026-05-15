@@ -1,3 +1,4 @@
+using Blazored.LocalStorage;
 using Tienda_Celulares.Web;
 using Tienda_Celulares.Web.Components;
 using Tienda_Celulares.Web.Services;
@@ -16,6 +17,14 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddOutputCache();
 
+// Agregar servicios personalizados
+
+builder.Services.AddScoped<AuthStateService>();
+builder.Services.AddBlazoredLocalStorage();
+
+
+// Agregar Blazored.LocalStorage
+builder.Services.AddBlazoredLocalStorage();
 
 // En Tienda_Celulares.Web -> Program.cs
 builder.Services.AddScoped(sp => new HttpClient

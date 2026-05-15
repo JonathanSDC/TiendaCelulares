@@ -310,6 +310,23 @@ namespace Tienda_Celulares.ApiService.Data
                 entity.Property(m => m.Cantidad).HasColumnName("cantidad");
             });
 
+            // =========================
+            // USUARIO_ROL (tabla de unión)
+            // =========================
+
+            modelBuilder.Entity<UsuarioRol>()
+            .HasKey(ur => new { ur.IdUsuario, ur.IdRol });
+
+            modelBuilder.Entity<UsuarioRol>()
+                .HasOne(ur => ur.Usuario)
+                .WithMany(u => u.UsuarioRoles)
+                .HasForeignKey(ur => ur.IdUsuario);
+
+            modelBuilder.Entity<UsuarioRol>()
+                .HasOne(ur => ur.Rol)
+                .WithMany(r => r.UsuarioRoles)
+                .HasForeignKey(ur => ur.IdRol);
+
 
 
             base.OnModelCreating(modelBuilder);

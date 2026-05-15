@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Tienda_Celulares.ApiService.Data;
+using Tienda_Celulares.ApiService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +22,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
+//Registrar servicios personalizados
+builder.Services.AddScoped<AuthService>();
 
+//Configurar JSON para evitar ciclos de referencia
 builder.Services.AddControllers()
     .AddJsonOptions(options => {
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
@@ -39,11 +43,7 @@ builder.Services.AddOpenApi();
 //builder.Services.AddControllers();
 
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-    });
+
 
 
 
@@ -61,7 +61,9 @@ app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    app.UseDeveloperExceptionPage();
 }
+
 
 
 

@@ -1,4 +1,12 @@
 ﻿@inherits LayoutComponentBase
+@using Tienda_Celulares.Web.Components.Pages
+@inject HttpClient Http
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@using Tienda_Celulares.Web.Services
+@inject AuthStateService AuthState
+
+
+
 
 <div class="page">
     <div class="sidebar">
@@ -6,18 +14,70 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        <div class="topbar d-flex justify-content-between align-items-center p-2 shadow-sm bg-light">
+            <div class="d-flex align-items-center gap-3">
+                @if (string.IsNullOrEmpty(CurrentUser))
+                {
+                    <NavLink class="btn btn-outline-primary" href="/login">
+                        <i class="bi bi-box-arrow-in-right"></i> Ingresar
+                    </NavLink>
+                }
+                else
+                {
+                    <span class="fw-bold text-primary">👤 @CurrentUser</span>
+                    <button class="btn btn-outline-danger" @onclick="Logout">
+                        <i class="bi bi-box-arrow-right"></i> Finalizar sesión
+                    </button>
+                }
+            </div>
+
+            <div>
+                <button class="btn btn-success">
+                    <i class="bi bi-person-plus"></i> Nuevo Usuario
+                </button>
+            </div>
         </div>
 
-        <article class="content px-4">
+        <article class="content px-4 py-2">
             @Body
         </article>
     </main>
 </div>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
-</div>
+@code {
+    [Inject] NavigationManager Navigation { get; set; } = default!;
+
+    private string? CurrentUser;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Cargar usuario guardado al renderizar
+            CurrentUser = await LocalStorage.GetItemAsync<string>("currentUser");
+
+            // Suscribirse a cambios en AuthState
+            AuthState.OnChange += UpdateUser;
+
+            StateHasChanged(); // refresca el layout
+        }
+    }
+
+    private void UpdateUser()
+    {
+        CurrentUser = AuthState.CurrentUser;
+        StateHasChanged(); // 🔹 refresca automáticamente cuando cambie
+    }
+
+    private async Task Logout()
+    {
+        await LocalStorage.RemoveItemAsync("currentUser");
+        AuthState.CurrentUser = null; // 🔹 dispara OnChange
+        Navigation.NavigateTo("/login");
+    }
+
+    public void Dispose()
+    {
+        AuthState.OnChange -= UpdateUser;
+    }
+}
