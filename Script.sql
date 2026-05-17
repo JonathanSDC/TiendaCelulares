@@ -660,15 +660,34 @@ END;
 EXEC InsertarDatosIniciales;
 
 
+--=========================
+-- PRUEBAS
+--=========================
+
 --ALTER DATABASE [tienda_celulares] SET RECURSIVE_TRIGGERS OFF;
 SELECT * FROM marca;
 SELECT * FROM categoria;
 SELECT * FROM producto;
 SELECT * FROM direccion;
+SELECT * FROM tienda;
 
-DELETE FROM marca WHERE id_marca > 6;  
-DELETE FROM categoria WHERE id_categoria > 16; 
 
+--==============================
+--Insertar producto
+--==============================
+
+INSERT INTO equipo_fisico (numero_serie, estado, color, id_producto, id_tienda)
+VALUES ('SN123', 'vendido', 'negro', 8, 1);
+
+
+--DELETE FROM marca WHERE id_marca > 6;  
+--DELETE FROM categoria WHERE id_categoria > 16; 
+
+
+
+----------------------
+--CREAR USUARIO PRUEBA
+----------------------
 
 -- 1. Insertar persona
 INSERT INTO persona (nombre, apellido, telefono, email, id_direccion)
@@ -710,3 +729,111 @@ FROM usuario
 WHERE username = 'admin';
 
 EXEC sp_helpconstraint 'producto';
+
+
+
+
+
+
+--//==================================
+--//===PRUEBA INVENTARIO EJECUTAR
+--//==================================
+
+
+
+
+CREATE PROCEDURE sp_AjustarInventario
+    @Tipo VARCHAR(50),
+    @IdProducto INT = NULL,
+    @Cantidad INT,
+    @IdTiendaOrigen INT = NULL,
+    @IdTiendaDestino INT = NULL,
+    @NumeroSerie VARCHAR(100) = NULL,
+    @Referencia VARCHAR(150) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRANSACTION;
+    BEGIN TRY
+        DECLARE @IdProductoReal INT = @IdProducto;
+
+        IF @NumeroSerie IS NOT NULL
+        BEGIN
+            SELECT @IdProductoReal = id_producto FROM equipo_fisico WHERE numero_serie = @NumeroSerie;
+            IF @IdProductoReal IS NULL
+                THROW 51000, 'Número de serie no encontrado', 1;
+        END
+
+        IF @Tipo = 'Entrada'
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM inventario WHERE id_producto = @IdProductoReal AND id_tienda = @IdTiendaDestino)
+            BEGIN
+                INSERT INTO inventario (id_producto, id_tienda, cantidad, stock_minimo)
+                VALUES (@IdProductoReal, @IdTiendaDestino, @Cantidad, 0);
+            END
+            ELSE
+            BEGIN
+                UPDATE inventario
+                SET cantidad = cantidad + @Cantidad
+                WHERE id_producto = @IdProductoReal AND id_tienda = @IdTiendaDestino;
+            END
+        END
+        ELSE IF @Tipo = 'Salida'
+        BEGIN
+            UPDATE inventario
+            SET cantidad = cantidad - @Cantidad
+            WHERE id_producto = @IdProductoReal AND id_tienda = @IdTiendaOrigen;
+            IF @@ROWCOUNT = 0
+                THROW 51001, 'Inventario origen no encontrado o stock insuficiente', 1;
+        END
+        ELSE IF @Tipo = 'Traslado'
+        BEGIN
+            UPDATE inventario
+            SET cantidad = cantidad - @Cantidad
+            WHERE id_producto = @IdProductoReal AND id_tienda = @IdTiendaOrigen;
+            IF @@ROWCOUNT = 0
+                THROW 51002, 'Inventario origen no encontrado o stock insuficiente', 1;
+
+            IF NOT EXISTS (SELECT 1 FROM inventario WHERE id_producto = @IdProductoReal AND id_tienda = @IdTiendaDestino)
+            BEGIN
+                INSERT INTO inventario (id_producto, id_tienda, cantidad, stock_minimo)
+                VALUES (@IdProductoReal, @IdTiendaDestino, @Cantidad, 0);
+            END
+            ELSE
+            BEGIN
+                UPDATE inventario
+                SET cantidad = cantidad + @Cantidad
+                WHERE id_producto = @IdProductoReal AND id_tienda = @IdTiendaDestino;
+            END
+        END
+
+        INSERT INTO movimiento_inventario (tipo, fecha, referencia, numero_serie, id_producto, cantidad)
+        VALUES (@Tipo, GETDATE(), @Referencia, @NumeroSerie, @IdProductoReal, @Cantidad);
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH
+END
+
+
+
+--=====================================
+-- EDITAR MOVIMIENTO INVENTARIO
+--=====================================
+
+ALTER TABLE movimiento_inventario
+ADD id_tienda INT NULL,
+    id_tienda_origen INT NULL,
+    id_tienda_destino INT NULL;
+
+ALTER TABLE movimiento_inventario
+ADD CONSTRAINT fk_movimiento_tienda FOREIGN KEY (id_tienda) REFERENCES tienda(id_tienda);
+
+ALTER TABLE movimiento_inventario
+ADD CONSTRAINT fk_movimiento_tienda_origen FOREIGN KEY (id_tienda_origen) REFERENCES tienda(id_tienda);
+
+ALTER TABLE movimiento_inventario
+ADD CONSTRAINT fk_movimiento_tienda_destino FOREIGN KEY (id_tienda_destino) REFERENCES tienda(id_tienda);
