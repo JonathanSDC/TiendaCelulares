@@ -1,0 +1,44 @@
+﻿@inject InventarioService InventarioService
+
+@if (isLoading)
+{
+    <div>Cargando movimientos…</div>
+}
+else if (movimientos.Count == 0)
+{
+
+    <div class="text-muted">No hay movimientos.</div>
+}
+else
+{
+    <table class="table table-hover table-sm">
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th>Serie</th><th>Cantidad</th><th>Referencia</th></tr></thead>
+        <tbody>
+            @foreach (var m in movimientos)
+            {
+                <tr>
+                    <td>@m.Fecha.ToLocalTime().ToString("g")</td>
+                    <td>@m.Tipo</td>
+                    <td>@m.Producto</td>
+                    <td>@m.NumeroSerie</td>
+                    <td>@m.Cantidad</td>
+                    <td>@m.Referencia</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<MovimientoDto> movimientos = new();
+    private bool isLoading;
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    public async Task Load()
+    {
+        isLoading = true;
+        try { movimientos = await InventarioService.GetMovimientosAsync(); }
+        finally { isLoading = false; }
+    }
+}

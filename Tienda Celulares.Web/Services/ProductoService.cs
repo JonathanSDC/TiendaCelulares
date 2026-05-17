@@ -1,7 +1,9 @@
-﻿using System.Buffers.Text;
-using System.Net.Http.Json;
+﻿using CRUD.Shared.Dto;
 using CRUD.Shared.Models;
 using CRUD.Shared.Models.ViewModel;
+using System.Buffers.Text;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace Tienda_Celulares.Web.Services
 {
@@ -30,15 +32,13 @@ namespace Tienda_Celulares.Web.Services
 
             var response = await _http.PostAsJsonAsync(url, producto);
             var content = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(content); 
+            Console.WriteLine(content);
             response.EnsureSuccessStatusCode();
         }
 
         // EDITAR
         public async Task EditarProducto(ProductoViewModel producto)
         {
-           
-
             var response = await _http.PutAsJsonAsync($"{url}/{producto.IdProducto}", producto);
             var content = await response.Content.ReadAsStringAsync();
             Console.WriteLine(content);

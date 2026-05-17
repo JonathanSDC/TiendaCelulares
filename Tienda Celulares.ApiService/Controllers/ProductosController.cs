@@ -1,17 +1,14 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Tienda_Celulares.ApiService.Data;
 using CRUD.Shared.Models.ViewModel;
 using CRUD.Shared.Models;
 
-
 namespace Tienda_Celulares.ApiService.Controllers
 {
-    using Microsoft.AspNetCore.Mvc;
-    using Microsoft.EntityFrameworkCore;
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
-    using System.Linq;
-
     [ApiController]
     [Route("api/[controller]")]
     public class ProductosController : ControllerBase
@@ -34,7 +31,7 @@ namespace Tienda_Celulares.ApiService.Controllers
                 {
                     IdProducto = p.id_producto,
                     NombreModelo = p.nombre_modelo,
-                    Descripcion = p.descripcion,
+                    Descripcion = p.descripcion ?? string.Empty,
                     PrecioActual = p.precio_actual,
                     TipoProducto = p.tipo_producto,
                     IdMarca = p.id_marca,
@@ -62,7 +59,7 @@ namespace Tienda_Celulares.ApiService.Controllers
             {
                 IdProducto = producto.id_producto,
                 NombreModelo = producto.nombre_modelo,
-                Descripcion = producto.descripcion,
+                Descripcion = producto.descripcion ?? string.Empty,
                 PrecioActual = producto.precio_actual,
                 TipoProducto = producto.tipo_producto,
                 IdMarca = producto.id_marca,
@@ -102,7 +99,7 @@ namespace Tienda_Celulares.ApiService.Controllers
             {
                 IdProducto = producto.id_producto,
                 NombreModelo = producto.nombre_modelo,
-                Descripcion = producto.descripcion,
+                Descripcion = producto.descripcion ?? string.Empty,
                 PrecioActual = producto.precio_actual,
                 TipoProducto = producto.tipo_producto,
                 IdMarca = producto.id_marca,
@@ -135,11 +132,39 @@ namespace Tienda_Celulares.ApiService.Controllers
         }
 
         // ELIMINAR
+        /* [HttpDelete("{id}")]
+         public async Task<ActionResult> Delete(int id)
+         {
+             var producto = await _db.Productos.FindAsync(id);
+             if (producto == null) return NotFound();
+
+             _db.Productos.Remove(producto);
+             await _db.SaveChangesAsync();
+             return NoContent();
+         }*/
+
         [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(int id)
+        public async Task<IActionResult> DeleteProducto(int id)
         {
             var producto = await _db.Productos.FindAsync(id);
             if (producto == null) return NotFound();
+
+            bool tieneMovimientos = await _db.MovimientosInventario.AnyAsync(m => m.IdProducto == id);
+            bool tieneInventario = await _db.Inventarios.AnyAsync(i => i.IdProducto == id);
+            bool tieneEquipos = await _db.EquiposFisicos.AnyAsync(e => e.IdProducto == id);
+
+            if (tieneMovimientos || tieneInventario || tieneEquipos)
+            {
+                var detalles = new List<string>();
+                if (tieneMovimientos) detalles.Add("movimientos");
+                if (tieneInventario) detalles.Add("registros de inventario");
+                if (tieneEquipos) detalles.Add("equipos físicos (series)");
+
+                return BadRequest(new
+                {
+                    error = "No se puede eliminar el producto porque tiene referencias en: " + string.Join(", ", detalles)
+                });
+            }
 
             _db.Productos.Remove(producto);
             await _db.SaveChangesAsync();

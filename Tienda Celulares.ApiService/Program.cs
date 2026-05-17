@@ -12,6 +12,12 @@ builder.Services.AddControllers().AddJsonOptions(options => {
     options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
 });
 
+builder.Services.AddHttpClient<InventarioService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["https://localhost:7473/"]);
+});
+
+
 //Configurar CORS
 builder.Services.AddCors(options => {
     options.AddDefaultPolicy(policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());

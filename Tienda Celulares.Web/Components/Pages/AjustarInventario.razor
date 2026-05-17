@@ -1,0 +1,133 @@
+﻿@page "/ajustar-inventario"
+@using CRUD.Shared.Dto
+@inject InventarioService InventarioService
+@using Tienda_Celulares.Web.Components.Pages.Shared
+
+<h3>Ajustar Inventario</h3>
+
+<div class="mb-3">
+    <label>Tipo</label>
+    <select @bind="dto.Tipo" class="form-control">
+        <option value="Entrada">Entrada</option>
+        <option value="Salida">Salida</option>
+        <option value="Traslado">Traslado</option>
+    </select>
+</div>
+
+<div class="mb-3">
+    <label>Id Producto</label>
+    <input type="number" @bind="dto.IdProducto" class="form-control" />
+</div>
+
+<div class="mb-3">
+    <label>Cantidad</label>
+    <input type="number" @bind="dto.Cantidad" class="form-control" />
+</div>
+
+<div class="mb-3">
+    <label>Tienda Origen</label>
+    <input type="number" @bind="dto.IdTiendaOrigen" class="form-control" />
+</div>
+
+<div class="mb-3">
+    <label>Tienda Destino</label>
+    <input type="number" @bind="dto.IdTiendaDestino" class="form-control" />
+</div>
+
+<div class="mb-3">
+    <label>Número de Serie</label>
+    <input type="text" @bind="dto.NumeroSerie" class="form-control" />
+</div>
+
+<div class="mb-3">
+    <label>Referencia</label>
+    <input type="text" @bind="dto.Referencia" class="form-control" />
+</div>
+
+<button class="btn btn-primary" @onclick="Enviar">Enviar</button>
+
+@if (!string.IsNullOrEmpty(mensaje))
+{
+    <div class="alert alert-info mt-3">@mensaje</div>
+}
+
+
+<!--Mostrar actividad-->
+<h3>Inventario</h3>
+
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(activeTab == 0 ? "active" : "")" @onclick="() => SelectTab(0)">Inventario físico</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(activeTab == 1 ? "active" : "")" @onclick="() => SelectTab(1)">Movimientos</a>
+    </li>
+</ul>
+
+<div>
+    @if (activeTab == 0)
+    {
+        <EquipoList @ref="equipoList" />
+    }
+    else
+    {
+        <MovimientoList @ref="movimientoList" />
+    }
+</div>
+
+<div class="mt-3">
+    <button class="btn btn-secondary me-2" @onclick="RefreshCurrent">Refrescar</button>
+    <button class="btn btn-outline-primary" @onclick="RefreshAll">Refrescar todo</button>
+</div>
+
+
+
+@code {
+    private MovimientoInventarioDto dto = new MovimientoInventarioDto { Tipo = "Entrada", Cantidad = 1 };
+    private string mensaje = string.Empty;
+
+    private async Task Enviar()
+    {
+        mensaje = string.Empty;
+        var resp = await InventarioService.AjustarConSpAsync(dto);
+        if (resp.IsSuccessStatusCode)
+        {
+            mensaje = "Movimiento registrado correctamente.";
+        }
+        else
+        {
+            var contenido = await resp.Content.ReadAsStringAsync();
+            mensaje = $"Error: {contenido}";
+        }
+    }
+
+    //=======================
+    //Ver pestanas 
+    //=======================
+    private int activeTab = 0;
+    private EquipoList? equipoList;
+    private MovimientoList? movimientoList;
+
+    private void SelectTab(int tab)
+    {
+        activeTab = tab;
+        // carga perezosa: invocar Load del componente si existe
+        if (tab == 0) _ = equipoList?.Load();
+        else _ = movimientoList?.Load();
+    }
+
+    private async Task RefreshCurrent()
+    {
+        if (activeTab == 0) await equipoList?.Load();
+        else await movimientoList?.Load();
+    }
+
+    private async Task RefreshAll()
+    {
+        await Task.WhenAll(equipoList?.Load() ?? Task.CompletedTask, movimientoList?.Load() ?? Task.CompletedTask);
+    }
+
+
+
+
+}

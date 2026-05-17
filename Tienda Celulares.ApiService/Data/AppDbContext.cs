@@ -9,6 +9,7 @@ namespace Tienda_Celulares.ApiService.Data
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
+            
         }
 
         // =========================
@@ -308,6 +309,31 @@ namespace Tienda_Celulares.ApiService.Data
                 entity.Property(m => m.NumeroSerie).HasColumnName("numero_serie");
                 entity.Property(m => m.IdProducto).HasColumnName("id_producto");
                 entity.Property(m => m.Cantidad).HasColumnName("cantidad");
+
+                // Mapear columnas de tienda (asegúrate de crear estas columnas en la BD)
+                entity.Property(m => m.IdTienda).HasColumnName("id_tienda");
+                entity.Property(m => m.IdTiendaOrigen).HasColumnName("id_tienda_origen");
+                entity.Property(m => m.IdTiendaDestino).HasColumnName("id_tienda_destino");
+
+                entity.HasOne(m => m.Producto)
+                      .WithMany()
+                      .HasForeignKey(m => m.IdProducto)
+                      .HasConstraintName("fk_movimiento_producto");
+
+                entity.HasOne(m => m.Tienda)
+                      .WithMany()
+                      .HasForeignKey(m => m.IdTienda)
+                      .HasConstraintName("fk_movimiento_tienda");
+
+                entity.HasOne(m => m.TiendaOrigen)
+                      .WithMany()
+                      .HasForeignKey(m => m.IdTiendaOrigen)
+                      .HasConstraintName("fk_movimiento_tienda_origen");
+
+                entity.HasOne(m => m.TiendaDestino)
+                      .WithMany()
+                      .HasForeignKey(m => m.IdTiendaDestino)
+                      .HasConstraintName("fk_movimiento_tienda_destino");
             });
 
             // =========================
@@ -327,7 +353,22 @@ namespace Tienda_Celulares.ApiService.Data
                 .WithMany(r => r.UsuarioRoles)
                 .HasForeignKey(ur => ur.IdRol);
 
+            //===============================
+            //Inventario
+            //===============================
+            base.OnModelCreating(modelBuilder);
 
+            modelBuilder.Entity<Inventario>()
+                .HasIndex(i => new { i.IdProducto, i.IdTienda })
+                .IsUnique()
+                .HasDatabaseName("uq_producto_tienda");
+
+            modelBuilder.Entity<EquipoFisico>()
+                .HasKey(e => e.NumeroSerie);
+
+            modelBuilder.Entity<MovimientoInventario>()
+                .Property(m => m.Fecha)
+                .HasDefaultValueSql("GETUTCDATE()");
 
             base.OnModelCreating(modelBuilder);
         }

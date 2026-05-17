@@ -29,9 +29,23 @@ builder.Services.AddBlazoredLocalStorage();
 // En Tienda_Celulares.Web -> Program.cs
 builder.Services.AddScoped(sp => new HttpClient
 {
-    // Reemplaza el puerto (7357) por el que use tu ApiService al iniciar
+    
     BaseAddress = new Uri("https://localhost:7473/")
 });
+
+
+// Registrar HttpClient para servicios que llamen a la API
+// Usa la clave ApiBaseUrl definida en appsettings.json
+builder.Services.AddHttpClient<InventarioService>(client =>
+{
+    var baseUrl = builder.Configuration.GetValue<string>("ApiBaseUrl");
+    if (string.IsNullOrWhiteSpace(baseUrl))
+        throw new InvalidOperationException("ApiBaseUrl no está configurada en appsettings.json");
+
+    client.BaseAddress = new Uri(baseUrl);
+});
+
+
 
 //builder.Services.AddScoped<ClienteService>();
 
